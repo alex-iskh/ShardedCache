@@ -39,7 +39,7 @@ template <typename CacheImpl>
 class Test
 {
 public:
-    template <typename CacheImpl = ShardedCache, typename ... CacheArgs>
+    template <typename CacheImpl = ShardedCache<std::map>, typename ... CacheArgs>
     Test(const int testrunsNum, const size_t writeWorkersNum, const size_t popWorkersNum,
         const std::string& resultsFile, CacheArgs&& ... cacheArgs) :
         _cache(std::forward<CacheArgs>(cacheArgs)...),
@@ -51,6 +51,17 @@ public:
         _randomGenerator = std::mt19937(rd());
     }
 
+    template <typename CacheImpl = SimpleSynchronizedCache<std::map>>
+    Test(const int testrunsNum, const size_t writeWorkersNum, const size_t popWorkersNum,
+        const std::string& resultsFile) :
+        _cache(),
+        _writeWorkersNum(writeWorkersNum), _popWorkersNum(popWorkersNum),
+        _resultsFile(resultsFile),
+        _testrunsNum(testrunsNum), _testStarted(false)
+    {
+        std::random_device rd;
+        _randomGenerator = std::mt19937(rd());
+    }
 
     void run()
     {
@@ -198,14 +209,14 @@ void testCaches(const size_t testedShardSize, const size_t workersNum)
 {
     if (testedShardSize == 1)
     {
-        auto simpleImplTest = Test<SimpleSynchronizedCache>(
+        auto simpleImplTest = Test<SimpleSynchronizedCache<std::map>>(
             10, workersNum, workersNum, "simple_cache_tests(" + std::to_string(workersNum) + "_workers).csv");
 
         simpleImplTest.run();
     }
     else
     {
-        auto shardedImpl4Test = Test<ShardedCache>(
+        auto shardedImpl4Test = Test<ShardedCache<std::map>>(
             10, workersNum, workersNum, "sharded_cache_" + std::to_string(testedShardSize) + "_tests(" + std::to_string(workersNum) + "_workers).csv", 4);
 
         shardedImpl4Test.run();

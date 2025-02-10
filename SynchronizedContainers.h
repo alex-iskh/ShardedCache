@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <mutex>
 #include <shared_mutex>
@@ -8,8 +9,10 @@
 
 #include "TransactionData.h"
 
+template <template <typename ...> typename MapImpl>
 class SimpleSynchronizedCache
 {
+    typedef MapImpl<long, std::vector<TransactionData>> CacheMap;
 public:
     void write(const TransactionData& transaction)
     {
@@ -39,12 +42,14 @@ public:
     }
 
 private:
-    std::map<int, std::vector<TransactionData>> _transactionCache;
+    CacheMap _transactionCache;
     std::mutex _cacheMutex;
 };
 
+template <template <typename ...> typename MapImpl>
 class CacheWithSharedMutex
 {
+    typedef MapImpl<long, std::vector<TransactionData>> CacheMap;
 public:
     void write(const TransactionData& transaction)
     {
@@ -74,10 +79,11 @@ public:
     }
 
 private:
-    std::map<int, std::vector<TransactionData>> _transactionCache;
+    CacheMap _transactionCache;
     std::shared_mutex _cacheMutex;
 };
 
+template <template <typename ...> typename MapImpl>
 class ShardedCache
 {
 public:
@@ -88,7 +94,7 @@ public:
         std::generate(
             _transactionCaches.begin(),
             _transactionCaches.end(),
-            []() { return std::make_unique<SimpleSynchronizedCache>(); });
+            []() { return std::make_unique<SimpleSynchronizedCache<MapImpl>>(); });
     }
 
     void write(const TransactionData& transaction)
@@ -108,5 +114,5 @@ public:
 
 private:
     const size_t _shardSize;
-    std::vector<std::unique_ptr<SimpleSynchronizedCache>> _transactionCaches;
+    std::vector<std::unique_ptr<SimpleSynchronizedCache<MapImpl>>> _transactionCaches;
 };
