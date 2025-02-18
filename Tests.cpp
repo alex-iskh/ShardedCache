@@ -205,21 +205,22 @@ private:
     std::mt19937 _randomGenerator;
 };
 
-void testCaches(const size_t testedShardSize, const size_t workersNum)
+template <template <typename ...> typename MapImpl>
+void testMapCaches(const size_t testedShardSize, const size_t workersNum)
 {
     if (testedShardSize == 1)
     {
-        auto simpleImplTest = Test<SimpleSynchronizedCache<std::map>>(
+        auto simpleImplTest = Test<SimpleSynchronizedCache<MapImpl>>(
             10, workersNum, workersNum, "simple_cache_tests(" + std::to_string(workersNum) + "_workers).csv");
 
         simpleImplTest.run();
     }
     else
     {
-        auto shardedImpl4Test = Test<ShardedCache<std::map>>(
-            10, workersNum, workersNum, "sharded_cache_" + std::to_string(testedShardSize) + "_tests(" + std::to_string(workersNum) + "_workers).csv", 4);
+        auto shardedImplTest = Test<ShardedCache<MapImpl>>(
+            10, workersNum, workersNum, "sharded_cache_" + std::to_string(testedShardSize) + "_tests(" + std::to_string(workersNum) + "_workers).csv", testedShardSize);
 
-        shardedImpl4Test.run();
+        shardedImplTest.run();
     }
 }
 
@@ -231,7 +232,7 @@ int main()
 
     for (auto i = 0; i < testPlan.size(); ++i)
     {
-        testCaches(testPlan[i], 4 * hardware_concurrency);
+        testMapCaches<std::unordered_map>(testPlan[i], 4 * hardware_concurrency);
     }
 
     // additional tests with diminished load to show limits of optimization advantage
