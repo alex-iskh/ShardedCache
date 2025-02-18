@@ -8,6 +8,7 @@
 #include <array>
 
 #include "SynchronizedContainers.h"
+#include "ReferenceContainers.h"
 
 const auto hardware_concurrency = (size_t)std::thread::hardware_concurrency();
 
@@ -224,6 +225,21 @@ void testMapCaches(const size_t testedShardSize, const size_t workersNum)
     }
 }
 
+#ifndef NO_REFERENCE_CONTAINERS
+void testReferenceCaches(const size_t workersNum)
+{
+    auto boostTest = Test<BoostConcurrentFlatMap>(
+        10, workersNum, workersNum, "boost_map_tests(" + std::to_string(workersNum) + "_workers).csv");
+
+    boostTest.run();
+
+    auto tbbTest = Test<TbbConcurrentHashMap>(
+        10, workersNum, workersNum, "tbb_map_tests(" + std::to_string(workersNum) + "_workers).csv");
+
+    tbbTest.run();
+}
+#endif // !NO_REFERENCE_CONTAINERS
+
 int main()
 {
     std::cout << "Hardware concurrency: " << hardware_concurrency << std::endl;
@@ -235,11 +251,15 @@ int main()
         testMapCaches<std::unordered_map>(testPlan[i], 4 * hardware_concurrency);
     }
 
+#ifndef NO_REFERENCE_CONTAINERS
+    testReferenceCaches(8 * hardware_concurrency);
+#endif // !NO_REFERENCE_CONTAINERS
+
     // additional tests with diminished load to show limits of optimization advantage
-    std::array<size_t, 4> additionalTestPlan = { 1, 8, 128, 100000 };
+    /*std::array<size_t, 4> additionalTestPlan = {1, 8, 128, 100000};
 
     for (auto i = 0; i < additionalTestPlan.size(); ++i)
     {
         testCaches(additionalTestPlan[i], hardware_concurrency);
-    }
+    }*/
 }
