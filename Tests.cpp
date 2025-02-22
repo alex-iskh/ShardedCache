@@ -42,10 +42,11 @@ class Test
 public:
     template <typename CacheImpl = ShardedCache<std::map>, typename ... CacheArgs>
     Test(const int testrunsNum, const size_t writeWorkersNum, const size_t popWorkersNum,
-        const std::string& resultsFile, CacheArgs&& ... cacheArgs) :
+        const std::string& testHeader, CacheArgs&& ... cacheArgs) :
         _cache(std::forward<CacheArgs>(cacheArgs)...),
         _writeWorkersNum(writeWorkersNum), _popWorkersNum(popWorkersNum),
-        _resultsFile(resultsFile),
+        _resultsFile("results.csv"),
+        _testHeader(testHeader),
         _testrunsNum(testrunsNum), _testStarted (false)
     {
         std::random_device rd;
@@ -54,10 +55,11 @@ public:
 
     template <typename CacheImpl = SimpleSynchronizedCache<std::map>>
     Test(const int testrunsNum, const size_t writeWorkersNum, const size_t popWorkersNum,
-        const std::string& resultsFile) :
+        const std::string& testHeader) :
         _cache(),
         _writeWorkersNum(writeWorkersNum), _popWorkersNum(popWorkersNum),
-        _resultsFile(resultsFile),
+        _resultsFile("results.csv"),
+        _testHeader(testHeader),
         _testrunsNum(testrunsNum), _testStarted(false)
     {
         std::random_device rd;
@@ -108,8 +110,9 @@ private:
 
         std::ofstream resultsFilestream;
         resultsFilestream.open(_resultsFile, std::ios_base::app);
-        resultsFilestream << _writeOpNum / 60. << "," << (double)_writeTime / _writeOpNum << ","
-            << _popOpNum / 60. << "," << (double)_popTime / _popOpNum << std::endl;
+        resultsFilestream << _testHeader << ","
+            << _writeWorkersNum << "," << _writeOpNum / 60. << "," << (double)_writeTime / _writeOpNum << ","
+            << _popWorkersNum << "," << _popOpNum / 60. << "," << (double)_popTime / _popOpNum << std::endl;
 
         std::cout << "Results saved to file " << _resultsFile << std::endl;
     }
@@ -199,6 +202,7 @@ private:
     size_t _writeWorkersNum;
     size_t _popWorkersNum;
     std::string _resultsFile;
+    std::string _testHeader;
     int _testrunsNum;
     bool _testStarted;
     std::mutex _testStartSync;
@@ -212,14 +216,16 @@ void testMapCaches(const size_t testedShardSize, const size_t workersNum)
     if (testedShardSize == 1)
     {
         auto simpleImplTest = Test<SimpleSynchronizedCache<MapImpl>>(
-            10, workersNum, workersNum, "simple_cache_tests(" + std::to_string(workersNum) + "_workers).csv");
+            10, workersNum, workersNum, "SimpleSynchronizedCache w/ " + std::string(typeid(MapImpl).name()));
 
         simpleImplTest.run();
     }
     else
     {
         auto shardedImplTest = Test<ShardedCache<MapImpl>>(
-            10, workersNum, workersNum, "sharded_cache_" + std::to_string(testedShardSize) + "_tests(" + std::to_string(workersNum) + "_workers).csv", testedShardSize);
+            10, workersNum, workersNum,
+            "ShardedCache w/ " + std::string(typeid(MapImpl).name()) + " " + std::to_string(testedShardSize) + " shards",
+            testedShardSize);
 
         shardedImplTest.run();
     }
@@ -229,12 +235,12 @@ void testMapCaches(const size_t testedShardSize, const size_t workersNum)
 void testReferenceCaches(const size_t workersNum)
 {
     auto boostTest = Test<BoostConcurrentFlatMap>(
-        10, workersNum, workersNum, "boost_map_tests(" + std::to_string(workersNum) + "_workers).csv");
+        10, workersNum, workersNum, "BoostConcurrentFlatMap");
 
     boostTest.run();
 
     auto tbbTest = Test<TbbConcurrentHashMap>(
-        10, workersNum, workersNum, "tbb_map_tests(" + std::to_string(workersNum) + "_workers).csv");
+        10, workersNum, workersNum, "TbbConcurrentHashMap");
 
     tbbTest.run();
 }
