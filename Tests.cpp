@@ -211,19 +211,19 @@ private:
 };
 
 template <template <typename ...> typename MapImpl>
-void testMapCaches(const size_t testedShardSize, const size_t workersNum)
+void testCaches(const size_t testsNum, const size_t testedShardSize, const size_t workersNum)
 {
     if (testedShardSize == 1)
     {
         auto simpleImplTest = Test<SimpleSynchronizedCache<MapImpl>>(
-            10, workersNum, workersNum, "SimpleSynchronizedCache w/ " + std::string(typeid(MapImpl).name()));
+            testsNum, workersNum, workersNum, "SimpleSynchronizedCache w/ " + std::string(typeid(MapImpl).name()));
 
         simpleImplTest.run();
     }
     else
     {
         auto shardedImplTest = Test<ShardedCache<MapImpl>>(
-            10, workersNum, workersNum,
+            testsNum, workersNum, workersNum,
             "ShardedCache w/ " + std::string(typeid(MapImpl).name()) + " " + std::to_string(testedShardSize) + " shards",
             testedShardSize);
 
@@ -232,15 +232,15 @@ void testMapCaches(const size_t testedShardSize, const size_t workersNum)
 }
 
 #ifndef NO_REFERENCE_CONTAINERS
-void testReferenceCaches(const size_t workersNum)
+void testReferenceCaches(const size_t testsNum, const size_t workersNum)
 {
     auto boostTest = Test<BoostConcurrentFlatMap>(
-        10, workersNum, workersNum, "BoostConcurrentFlatMap");
+        testsNum, workersNum, workersNum, "BoostConcurrentFlatMap");
 
     boostTest.run();
 
     auto tbbTest = Test<TbbConcurrentHashMap>(
-        10, workersNum, workersNum, "TbbConcurrentHashMap");
+        testsNum, workersNum, workersNum, "TbbConcurrentHashMap");
 
     tbbTest.run();
 }
@@ -250,22 +250,40 @@ int main()
 {
     std::cout << "Hardware concurrency: " << hardware_concurrency << std::endl;
 
-    std::array<size_t, 7> testPlan = { 1, 4, 8, 32, 128, 4096, 100000 };
+    std::array<size_t, 10> testPlan = { 4, 8, 16, 32, 64, 128, 1024, 4096, 100000, 1 };
+    size_t testsNum = 20;
+
+    size_t workersNum = 32 * hardware_concurrency;
+    size_t reducedWorkersNum = hardware_concurrency;
+
+    // comparing simple cache implementation with sharded cache with differend shard sizes
+    // (all caches built on std::map)
 
     for (auto i = 0; i < testPlan.size(); ++i)
     {
-        testMapCaches<std::unordered_map>(testPlan[i], 4 * hardware_concurrency);
+        testCaches<std::map>(testsNum, testPlan[i], workersNum);
     }
 
-#ifndef NO_REFERENCE_CONTAINERS
-    testReferenceCaches(8 * hardware_concurrency);
-#endif // !NO_REFERENCE_CONTAINERS
-
     // additional tests with diminished load to show limits of optimization advantage
-    /*std::array<size_t, 4> additionalTestPlan = {1, 8, 128, 100000};
+
+    std::array<size_t, 4> additionalTestPlan = { 1, 8, 128, 100000 };
 
     for (auto i = 0; i < additionalTestPlan.size(); ++i)
     {
-        testCaches(additionalTestPlan[i], hardware_concurrency);
-    }*/
+        testCaches<std::map>(testsNum, additionalTestPlan[i], reducedWorkersNum);
+    }
+
+    // comparing simple cache implementation with sharded cache with differend shard sizes
+    // (all caches built on std::unordered_map)
+
+    for (auto i = 0; i < testPlan.size(); ++i)
+    {
+        testCaches<std::unordered_map>(testsNum, testPlan[i], workersNum);
+    }
+
+#ifndef NO_REFERENCE_CONTAINERS
+    // running the same tests with some popular concurrent maps for reference
+
+    testReferenceCaches(testsNum, workersNum);
+#endif // !NO_REFERENCE_CONTAINERS
 }
