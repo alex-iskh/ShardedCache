@@ -85,8 +85,8 @@ private:
 
         // these pools won't just fire as many operations as they can,
         // but will emulate real-time occuring requests to the cache in multithreaded environment
-        auto writeTestPool = TaskPool(_writeWorkersNum, std::bind(&Test::writeTransactions, this));
-        auto popTestPool = TaskPool(_popWorkersNum, std::bind(&Test::popTransactions, this));
+        auto writeTestPool = TaskPool(_writeWorkersNum, std::bind(&Test::writeOperations, this));
+        auto popTestPool = TaskPool(_popWorkersNum, std::bind(&Test::popOperations, this));
 
         _writeTime = 0;
         _writeOpNum = 0;
@@ -117,7 +117,7 @@ private:
         std::cout << "Results saved to file " << _resultsFile << std::endl;
     }
 
-    void writeTransactions()
+    void writeOperations()
     {
         {
             std::unique_lock<std::mutex> lock(_testStartSync);
@@ -158,7 +158,7 @@ private:
         }
     }
 
-    void popTransactions()
+    void popOperations()
     {
         {
             std::unique_lock<std::mutex> lock(_testStartSync);
