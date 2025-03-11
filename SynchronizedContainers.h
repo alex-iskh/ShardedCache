@@ -12,7 +12,7 @@
 template <template <typename ...> typename MapImpl>
 class SimpleSynchronizedCache
 {
-    typedef MapImpl<long, std::vector<TransactionData>> CacheMap;
+    typedef MapImpl<long long, std::vector<TransactionData>> CacheMap;
 public:
     void write(const TransactionData& transaction)
     {
@@ -20,7 +20,7 @@ public:
         _transactionCache[transaction.userId].push_back(transaction);
     }
 
-    std::vector<TransactionData> read(const long& userId)
+    std::vector<TransactionData> read(const long long& userId)
     {
         std::lock_guard<std::mutex> lock(_cacheMutex);
 
@@ -34,7 +34,7 @@ public:
         }
     }
 
-    std::vector<TransactionData> pop(const long& userId)
+    std::vector<TransactionData> pop(const long long& userId)
     {
         std::lock_guard<std::mutex> lock(_cacheMutex);
         auto userNode = _transactionCache.extract(userId);
@@ -49,7 +49,7 @@ private:
 template <template <typename ...> typename MapImpl>
 class CacheWithSharedMutex
 {
-    typedef MapImpl<long, std::vector<TransactionData>> CacheMap;
+    typedef MapImpl<long long, std::vector<TransactionData>> CacheMap;
 public:
     void write(const TransactionData& transaction)
     {
@@ -57,7 +57,7 @@ public:
         _transactionCache[transaction.userId].push_back(transaction);
     }
 
-    std::vector<TransactionData> read(const long& userId)
+    std::vector<TransactionData> read(const long long& userId)
     {
         std::shared_lock<std::shared_mutex> lock(_cacheMutex);
 
@@ -71,7 +71,7 @@ public:
         }
     }
 
-    std::vector<TransactionData> pop(const long& userId)
+    std::vector<TransactionData> pop(const long long& userId)
     {
         std::lock_guard<std::shared_mutex> lock(_cacheMutex);
         auto userNode = _transactionCache.extract(userId);
@@ -102,12 +102,12 @@ public:
         _transactionCaches[transaction.userId % _shardSize]->write(transaction);
     }
 
-    std::vector<TransactionData> read(const long& userId)
+    std::vector<TransactionData> read(const long long& userId)
     {
         _transactionCaches[userId % _shardSize]->read(userId);
     }
 
-    std::vector<TransactionData> pop(const long& userId)
+    std::vector<TransactionData> pop(const long long& userId)
     {
         return std::move(_transactionCaches[userId % _shardSize]->pop(userId));
     }

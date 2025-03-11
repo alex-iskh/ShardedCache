@@ -4,9 +4,9 @@
 
 struct TransactionData
 {
-    long transactionId;
-    long userId;
-    unsigned long date;
+    long long transactionId;
+    long long userId;
+    unsigned long long date;
     double amount;
     int type;
     std::string description;

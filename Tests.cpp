@@ -194,10 +194,10 @@ private:
 
     CacheImpl _cache;
 
-    std::atomic<long> _writeTime;
-    std::atomic<long> _writeOpNum;
-    std::atomic<long> _popTime;
-    std::atomic<long> _popOpNum;
+    std::atomic<long long> _writeTime;
+    std::atomic<long long> _writeOpNum;
+    std::atomic<long long> _popTime;
+    std::atomic<long long> _popOpNum;
 
     size_t _writeWorkersNum;
     size_t _popWorkersNum;

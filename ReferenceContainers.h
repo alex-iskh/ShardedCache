@@ -20,7 +20,7 @@ public:
     }
 
     //it's not actually a pop operation - it replaces existing vector with an empty one, because there's no transactional "retrieve and erase" for concurrent_flat_map
-    std::vector<TransactionData> pop(const long& userId)
+    std::vector<TransactionData> pop(const long long& userId)
     {
         auto userTransactions = std::vector<TransactionData>();
 
@@ -33,12 +33,12 @@ public:
     }
 
 private:
-    boost::concurrent_flat_map<long, std::vector<TransactionData>> _transactionCache;
+    boost::concurrent_flat_map<long long, std::vector<TransactionData>> _transactionCache;
 };
 
 class TbbConcurrentHashMap
 {
-    typedef oneapi::tbb::concurrent_hash_map<long, std::vector<TransactionData>> MapType;
+    typedef oneapi::tbb::concurrent_hash_map<long long, std::vector<TransactionData>> MapType;
 public:
     void write(const TransactionData& transaction)
     {
@@ -50,7 +50,7 @@ public:
         }
     }
 
-    std::vector<TransactionData> pop(const long& userId)
+    std::vector<TransactionData> pop(const long long& userId)
     {
         MapType::const_accessor acc;
         
