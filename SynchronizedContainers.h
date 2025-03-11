@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "TransactionData.h"
+#include "Auxiliary.h"
 
 template <template <typename ...> typename MapImpl>
 class SimpleSynchronizedCache
@@ -37,6 +38,12 @@ public:
     std::vector<TransactionData> pop(const long long& userId)
     {
         std::lock_guard<std::mutex> lock(_cacheMutex);
+
+#ifdef SIMULATE_ADDITIONAL_WORKLOAD
+        // simulate 0.1 ms of work
+        simulateWorkload(100);
+#endif
+
         auto userNode = _transactionCache.extract(userId);
         return userNode.empty() ? std::vector<TransactionData>() : std::move(userNode.mapped());
     }
@@ -74,6 +81,12 @@ public:
     std::vector<TransactionData> pop(const long long& userId)
     {
         std::lock_guard<std::shared_mutex> lock(_cacheMutex);
+
+#ifdef SIMULATE_ADDITIONAL_WORKLOAD
+        // simulate 0.1 ms of work
+        simulateWorkload(100);
+#endif
+
         auto userNode = _transactionCache.extract(userId);
         return userNode.empty() ? std::vector<TransactionData>() : std::move(userNode.mapped());
     }

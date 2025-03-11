@@ -6,6 +6,7 @@
 #include <oneapi/tbb/concurrent_hash_map.h>
 
 #include "TransactionData.h"
+#include "Auxiliary.h"
 
 class BoostConcurrentFlatMap
 {
@@ -26,6 +27,11 @@ public:
 
         _transactionCache.visit(userId, [&](auto& kv)
             {
+#ifdef SIMULATE_ADDITIONAL_WORKLOAD
+                // simulate 0.1 ms of work
+                simulateWorkload(100);
+#endif
+
                 std::swap(userTransactions, kv.second);
             });
 
@@ -56,6 +62,11 @@ public:
         
         auto userTransactions =
             _transactionCache.find(acc, userId) ? acc->second : std::vector<TransactionData>();
+
+#ifdef SIMULATE_ADDITIONAL_WORKLOAD
+        // simulate 0.1 ms of work
+        simulateWorkload(100);
+#endif
 
         _transactionCache.erase(acc);
 
